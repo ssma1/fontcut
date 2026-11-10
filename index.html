@@ -156,7 +156,8 @@ tailwind.config = {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getDatabase, ref, set, get, update } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+// ИСПРАВЛЕНИЕ 1: Добавлен импорт remove
+import { getDatabase, ref, set, get, update, remove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB_BnAN37YEk2_lbSw3DZhoxlh8-7CTtTI",
@@ -788,8 +789,10 @@ window.saveFontChanges = async function(fontId) {
         url: document.getElementById('editFontUrl').value.trim()
     };
     
+    // ИСПРАВЛЕНИЕ 2: Безопасное получение значения видимости
     var activeVis = document.querySelector('.vis-pill.active');
     var visibility = activeVis ? activeVis.dataset.value : 'public';
+    if (!visibility) visibility = 'public'; // Если вдруг undefined, ставим public
     
     try {
         await update(ref(db, 'fonts/' + fontId), { name: name, visibility: visibility, meta: meta });
@@ -798,6 +801,7 @@ window.saveFontChanges = async function(fontId) {
         renderFontDetail(fontId);
     } catch(e) {
         showToast('Ошибка сохранения: ' + e.message, 'error');
+        console.error(e);
     }
 };
 
@@ -1359,7 +1363,7 @@ function renderGlyphsGrid() {
 }
 window.removeGlyph = function(idx) { window.FC.glyphsList.splice(idx, 1); renderGlyphsGrid(); };
 
-// ======== ОБНОВЛЕННАЯ ЛОГИКА ТРАССИРОВКИ И СБОРКИ ========
+// ======== ЛОГИКА ТРАССИРОВКИ И СБОРКИ ========
 function traceBitmapToPaths(imageData, targetSize) {
     targetSize = targetSize || 1000;
     var w = imageData.width, h = imageData.height, data = imageData.data;
