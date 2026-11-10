@@ -98,3 +98,4 @@ function escapeXml(unsafe) {
 export const config = {
   path: ["/*"],
 };
+
