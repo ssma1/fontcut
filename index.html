@@ -4,12 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>FontCut — Создай свой шрифт</title>
+
 <!-- ======= FAVICON И ОБЛОЖКА САЙТА ======= -->
-<!-- Иконка вкладки (фавиконка) -->
 <link rel="icon" type="image/png" href="fontcut.png">
 <link rel="apple-touch-icon" href="fontcut.png">
 
-<!-- Open Graph (Telegram, VK, Discord, Facebook) -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="FontCut">
 <meta property="og:title" content="FontCut — Создавай иконочные шрифты">
@@ -17,13 +16,14 @@
 <meta property="og:image" content="fontcut-banner.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:url" content="https://ваш-домен.com"> <!-- Замените на реальный домен после загрузки -->
+<meta property="og:url" content="https://fontcuts.web.app"> <!-- Замените на ваш реальный домен -->
 
-<!-- Twitter / X -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="FontCut — Создавай иконочные шрифты">
 <meta name="twitter:description" content="Платформа для создания, тестирования и публикации собственных иконочных шрифтов.">
 <meta name="twitter:image" content="fontcut-banner.png">
+
+<!-- ==== СТИЛИ И СКРИПТЫ ==== -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
 tailwind.config = {
@@ -75,25 +75,25 @@ tailwind.config = {
 <body class="min-h-screen flex flex-col bg-fc-bg text-slate-100 antialiased">
 
 <header class="sticky top-0 z-30 bg-fc-surface/95 backdrop-blur-md border-b border-fc-surface3 px-4 py-2.5 flex items-center justify-between">
-    <button onclick="navigateTo('home')" class="flex items-center gap-2">
+    <a href="/" onclick="navigateTo('home'); return false;" class="flex items-center gap-2">
         <span class="material-symbols-outlined text-fc-primary text-3xl">font_download</span>
         <h1 class="text-xl font-bold tracking-tight text-fc-primary">FontCut</h1>
-    </button>
+    </a>
     <div id="headerRight" class="flex items-center gap-2"></div>
 </header>
 
 <main id="viewContainer" class="flex-1 w-full max-w-6xl mx-auto p-4 pb-24"></main>
 
 <nav class="fixed bottom-0 left-0 right-0 z-30 bg-fc-surface/95 backdrop-blur-md border-t border-fc-surface3 flex items-center justify-around px-2 py-2 safe-bottom">
-    <button onclick="navigateTo('home')" id="navHome" class="flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition text-fc-outline">
+    <a href="/" onclick="navigateTo('home'); return false;" id="navHome" class="flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition text-fc-outline">
         <span class="material-symbols-outlined">home</span><span class="text-[10px] font-medium">Главная</span>
-    </button>
-    <button onclick="navigateTo('create')" id="navCreate" class="flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition text-fc-outline">
+    </a>
+    <a href="/create" onclick="navigateTo('create'); return false;" id="navCreate" class="flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition text-fc-outline">
         <span class="material-symbols-outlined">add_circle</span><span class="text-[10px] font-medium">Создать</span>
-    </button>
-    <button onclick="navigateTo('profile')" id="navProfile" class="flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition text-fc-outline">
+    </a>
+    <a href="/profile" onclick="navigateTo('profile'); return false;" id="navProfile" class="flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition text-fc-outline">
         <span class="material-symbols-outlined">person</span><span class="text-[10px] font-medium">Профиль</span>
-    </button>
+    </a>
 </nav>
 
 <div id="toast" class="fixed bottom-20 right-4 bg-fc-surface2 border border-fc-primary text-slate-100 px-4 py-2.5 rounded-2xl shadow-xl transform translate-y-32 opacity-0 transition-all duration-300 z-50 flex items-center gap-2 max-w-[90vw]">
@@ -346,33 +346,51 @@ function renderHeader() {
         var cached = window.FC.userProfileCache[window.FC.user.uid];
         var avatar = (cached && cached.avatar) || window.FC.user.photoURL;
         var name = (cached && cached.username) || window.FC.user.displayName || 'User';
-        el.innerHTML = '<button onclick="navigateTo(\'profile\')" class="flex items-center gap-2 p-1 pr-3 rounded-full bg-fc-surface2 hover:bg-fc-surface3 transition border border-fc-surface3">' +
+        el.innerHTML = '<a href="/profile" onclick="navigateTo(\'profile\'); return false;" class="flex items-center gap-2 p-1 pr-3 rounded-full bg-fc-surface2 hover:bg-fc-surface3 transition border border-fc-surface3">' +
             (avatar ? '<img src="' + avatar + '" class="w-8 h-8 rounded-full object-cover" alt="">' : '<div class="w-8 h-8 rounded-full bg-fc-primaryContainer flex items-center justify-center text-fc-onPrimaryContainer">' + MATERIAL_ICON('person','text-lg') + '</div>') +
-            '<span class="text-xs font-semibold max-w-[80px] truncate">' + escapeHtml(name) + '</span></button>';
+            '<span class="text-xs font-semibold max-w-[80px] truncate">' + escapeHtml(name) + '</span></a>';
     } else {
         el.innerHTML = '<button onclick="openAuthModal()" class="px-4 py-2 rounded-full bg-fc-primary text-fc-onPrimary font-bold text-xs flex items-center gap-1.5">' + MATERIAL_ICON('login','text-sm') + ' Войти</button>';
     }
 }
 
+// ========= НОВАЯ ЛОГИКА НАВИГАЦИИ (БЕЗ ?view=) =========
 window.navigateTo = function(view, param, authorId) {
-    var url = '?view=' + view;
-    if (param) url += '&id=' + param;
-    if (authorId) url += '&author=' + authorId;
-    try { history.pushState({ view: view, param: param, authorId: authorId }, '', url); } catch(e) {}
+    // Формируем красивый URL
+    let url = '/';
+    if (view === 'home') url = '/';
+    else if (view === 'create') url = '/create';
+    else if (view === 'profile') url = authorId ? '/profile/' + authorId : '/profile';
+    else if (view === 'font') url = '/font/' + param;
+    else if (view === 'drafts') url = '/drafts';
+    
+    try { history.pushState({ view, param, authorId }, '', url); } catch(e) {}
     route();
 };
 
+window.navigateToProfileById = function(uid) {
+    navigateTo('profile', null, uid);
+};
+
 function route() {
-    var params = new URLSearchParams(location.search);
-    var view = params.get('view') || 'home';
-    var id = params.get('id');
-    var authorId = params.get('author');
+    // 1. Получаем путь из адресной строки (например, "/font/123")
+    var path = location.pathname.split('/').filter(Boolean); // ["font", "123"]
+    var view = path[0] || 'home';
+    var param = path[1] || null;
+
+    // 2. Обратная совместимость (если вдруг старая ссылка ?view=...)
+    var searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('view')) {
+        view = searchParams.get('view');
+        param = searchParams.get('id') || searchParams.get('author');
+    }
+
     updateBottomNav(view);
-    if (authorId) return renderProfileView(authorId);
+
+    if (view === 'profile') return renderProfileView(param || (window.FC.user ? window.FC.user.uid : null));
     if (view === 'home') return renderHome();
     if (view === 'create') return renderCreate();
-    if (view === 'profile') return renderProfileView(window.FC.user ? window.FC.user.uid : null);
-    if (view === 'font' && id) return renderFontDetail(id);
+    if (view === 'font' && param) return renderFontDetail(param);
     if (view === 'drafts') return renderDrafts();
     renderHome();
 }
@@ -382,7 +400,8 @@ function updateBottomNav(view) {
     ['home','create','profile'].forEach(function(v) {
         var btn = document.getElementById('nav' + v.charAt(0).toUpperCase() + v.slice(1));
         if (!btn) return;
-        if (v === view || (view === 'font' && v === 'home')) {
+        // Подсвечиваем вкладку
+        if (v === view || (view === 'font' && v === 'home') || (view === 'drafts' && v === 'create')) {
             btn.classList.remove('text-fc-outline'); btn.classList.add('text-fc-primary');
             btn.querySelector('span:last-child').classList.add('font-bold');
         } else {
@@ -391,6 +410,7 @@ function updateBottomNav(view) {
         }
     });
 }
+// ========================================================
 
 // ======= HOME =======
 async function renderHome() {
@@ -546,8 +566,8 @@ window.toggleFollow = async function(targetUid) {
         showToast(currentlyFollowing ? 'Отписались' : 'Подписались');
         if (window.FC.currentView === 'home') renderHome();
         else if (window.FC.currentView === 'profile') {
-            var params = new URLSearchParams(location.search);
-            renderProfileView(params.get('author') || window.FC.user.uid);
+            var path = location.pathname.split('/').filter(Boolean);
+            renderProfileView(path[1] || window.FC.user.uid);
         }
     } catch(e) { 
         showToast('Ошибка подписки: ' + e.message, 'error'); 
@@ -555,9 +575,6 @@ window.toggleFollow = async function(targetUid) {
     }
 };
 
-// ==========================================
-// ИЗМЕНЕНА ЗАГЛУШКА ОБЛОЖКИ (ВМЕСТО Aa - НАЗВАНИЕ)
-// ==========================================
 function fontCardHtml(f) {
     var likeCount = Object.keys(f.likes || {}).length;
     var liked = window.FC.user && f.likes && f.likes[window.FC.user.uid];
@@ -659,7 +676,7 @@ window.toggleLike = async function(fontId) {
 };
 
 window.shareFont = function(fontId) {
-    var url = location.origin + location.pathname + '?view=font&id=' + fontId;
+    var url = location.origin + '/font/' + fontId;
     if (navigator.share) { navigator.share({ title: 'FontCut', url: url }).catch(function(){}); }
     else {
         try { navigator.clipboard.writeText(url).then(function(){ showToast('Ссылка скопирована'); }).catch(function(){ showToast('Ошибка копирования', 'error'); }); }
@@ -766,11 +783,6 @@ async function loadCommentAuthors(comments) {
         });
     });
 }
-
-window.navigateToProfileById = function(uid) {
-    try { history.pushState({}, '', '?view=profile&author=' + uid); } catch(e) {}
-    renderProfileView(uid);
-};
 
 // ======= DOWNLOAD =======
 window.showDownloadModal = function(fontId) {
@@ -917,7 +929,6 @@ async function renderProfileView(uid) {
         else {
             html += '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">';
             filtered.forEach(function(f){
-                // ИЗМЕНЕНА ЗАГЛУШКА В ПРОФИЛЕ
                 html += '<div onclick="navigateTo(\'font\',\'' + f.id + '\')" class="bg-slate-950 rounded-2xl border border-fc-surface3 overflow-hidden cursor-pointer hover:border-fc-primary transition"><div class="w-full h-24 bg-gradient-to-br from-fc-primaryContainer to-fc-surface3 flex items-center justify-center relative">' +
                     (f.cover ? '<img src="' + f.cover + '" class="w-full h-full object-cover">' : '<span class="text-xl font-bold text-fc-onPrimaryContainer opacity-60 px-2 truncate w-full text-center">' + escapeHtml(f.name) + '</span>') +
                     '</div><div class="p-3"><h4 class="font-bold text-sm text-slate-100 truncate">' + escapeHtml(f.name) + '</h4><p class="text-xs text-fc-outline mt-1">' + MATERIAL_ICON('favorite','text-xs') + ' ' + Object.keys(f.likes||{}).length + ' · ' + formatBytes(f.fontBuffer) + '</p></div></div>';
@@ -932,8 +943,16 @@ async function renderProfileView(uid) {
     if (ps) ps.addEventListener('input', function(e){ window.FC.profileQuery = e.target.value; renderProfileView(uid); });
 }
 
-window.setProfileTab = function(t) { window.FC.profileTab = t; var p = new URLSearchParams(location.search); renderProfileView(p.get('author') || (window.FC.user ? window.FC.user.uid : null)); };
-window.setProfileSort = function(s) { window.FC.profileSort = s; var p = new URLSearchParams(location.search); renderProfileView(p.get('author') || (window.FC.user ? window.FC.user.uid : null)); };
+window.setProfileTab = function(t) { 
+    window.FC.profileTab = t; 
+    var path = location.pathname.split('/').filter(Boolean);
+    renderProfileView(path[1] || (window.FC.user ? window.FC.user.uid : null)); 
+};
+window.setProfileSort = function(s) { 
+    window.FC.profileSort = s; 
+    var path = location.pathname.split('/').filter(Boolean);
+    renderProfileView(path[1] || (window.FC.user ? window.FC.user.uid : null)); 
+};
 
 window.showUserList = async function(uid, type) {
     var userData = await fetchUserProfile(uid);
@@ -1160,13 +1179,12 @@ function renderGlyphsGrid() {
 }
 window.removeGlyph = function(idx) { window.FC.glyphsList.splice(idx, 1); renderGlyphsGrid(); };
 
-// ======== ОБНОВЛЕННАЯ ЛОГИКА ТРАССИРОВКИ И СБОРКИ (ФИКС РАЗМЕРА) ========
+// ======== ОБНОВЛЕННАЯ ЛОГИКА ТРАССИРОВКИ И СБОРКИ ========
 function traceBitmapToPaths(imageData, targetSize) {
     targetSize = targetSize || 1000;
     var w = imageData.width, h = imageData.height, data = imageData.data;
     var threshold = 100;
     
-    // 1. Поиск границ (bounding box) для обрезки пустого места
     var minX = w, minY = h, maxX = 0, maxY = 0;
     var hasPixels = false;
 
@@ -1188,12 +1206,10 @@ function traceBitmapToPaths(imageData, targetSize) {
     var gw = maxX - minX + 1;
     var gh = maxY - minY + 1;
     
-    // 2. Масштабирование (высота 700 из 1000)
     var scale = 700 / gh; 
     var path = new opentype.Path();
     var grid = [];
 
-    // 3. Заполняем сетку для трассировки, пропуская пустые края
     for (var y = minY; y <= maxY; y++) {
         var row = [];
         for (var x = minX; x <= maxX; x++) {
@@ -1220,17 +1236,15 @@ function traceBitmapToPaths(imageData, targetSize) {
     result.forEach(function(contour){
         if (contour.length < 3) return;
         contour.forEach(function(pt, i){
-            // Применяем масштаб и выравниваем по базовой линии (снизу)
             var vx = pt[0] * scale;
-            var vy = (gh - pt[1]) * scale; // Инверсия Y + базовая линия
+            var vy = (gh - pt[1]) * scale;
             if (i === 0) path.moveTo(vx, vy); else path.lineTo(vx, vy);
         });
         path.closePath();
     });
     
-    // 4. Вычисляем ширину символа (advanceWidth), чтобы не было огромных отступов
-    var advanceWidth = Math.ceil((gw * scale) + (100 * scale)); // + небольшой отступ
-    if (advanceWidth < 150) advanceWidth = 150; // минимум для пробела
+    var advanceWidth = Math.ceil((gw * scale) + (100 * scale));
+    if (advanceWidth < 150) advanceWidth = 150;
     
     return { path: path, width: advanceWidth };
 }
