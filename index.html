@@ -16,7 +16,12 @@
 <meta property="og:image" content="fontcut-banner.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:url" content="https://fontcut.wcat.com">
+<meta property="og:url" content="https://fontcut.wcat.com"> <!-- Замените на ваш реальный домен -->
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="FontCut — Создавай иконочные шрифты">
+<meta name="twitter:description" content="Платформа для создания, тестирования и публикации собственных иконочных шрифтов.">
+<meta name="twitter:image" content="fontcut-banner.png">
 
 <!-- ==== СТИЛИ И СКРИПТЫ ==== -->
 <script src="https://cdn.tailwindcss.com"></script>
@@ -62,13 +67,17 @@ tailwind.config = {
     *::selection { background: transparent; }
     .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0); }
     .comment-nested { margin-left: 16px; border-left: 2px solid #2c2f38; padding-left: 10px; }
-    
     .chip { display:inline-flex; align-items:center; gap:4px; padding:6px 12px; border-radius:999px; font-size:12px; font-weight:600; border:1px solid #2c2f38; background:#181a1f; color:#938f99; cursor:pointer; transition: all 0.15s; }
     .chip.active { background:#4f378b; color:#eaddff; border-color:#4f378b; }
     .chip:hover:not(.active) { background:#22252c; }
-
+    .vis-pill { position: relative; display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 12px; border: 1px solid #2c2f38; background: #0f1115; cursor: pointer; transition: all 0.2s; font-size: 13px; color: #ccc2dc; }
+    .vis-pill:hover { background: #181a1f; }
+    .vis-pill.active { border-color: #d0bcff; background: rgba(208, 188, 255, 0.1); color: #eaddff; font-weight: 500; }
+    .vis-pill .indicator { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #938f99; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
+    .vis-pill.active .indicator { border-color: #d0bcff; background: #d0bcff; }
+    .vis-pill.active .indicator::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #381e72; }
     .filters-drawer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out, margin-top 0.3s ease-in-out; opacity: 0; margin-top: 0; }
-    .filters-drawer.open { max-height: 400px; opacity: 1; margin-top: 12px; }
+    .filters-drawer.open { max-height: 200px; opacity: 1; margin-top: 12px; }
 </style>
 </head>
 <body class="min-h-screen flex flex-col bg-fc-bg text-slate-100 antialiased">
@@ -173,7 +182,7 @@ window.FC = {
     homeSort: 'pop', homeTab: 'fonts', homeQuery: '', homeFiltersOpen: false,
     profileSort: 'new', profileQuery: '', profileTab: 'fonts', profileFiltersOpen: false,
     fontMeta: {
-        version: '1.0', description: '', copyright: '', license: '',
+        version: '1.0', description: '', copyright: '', license: '', 
         weight: '400', style: 'Regular', designer: '', manufacturer: '', url: ''
     }
 };
@@ -433,6 +442,7 @@ async function renderHome() {
     var html =
         '<div class="fade-in space-y-4">' +
         '<div class="bg-fc-surface rounded-3xl border border-fc-surface3 p-3">' +
+        
         '<div class="flex items-center gap-2">' +
         '<div class="relative flex-1">' +
         '<input type="text" id="homeSearchInput" value="' + escapeHtml(window.FC.homeQuery) + '" placeholder="Поиск по названию и автору..." class="w-full bg-slate-950 border border-fc-surface3 focus:border-fc-primary text-slate-100 rounded-2xl pl-11 pr-4 py-2.5 text-sm outline-none">' +
@@ -442,6 +452,7 @@ async function renderHome() {
         MATERIAL_ICON('tune') +
         '</button>' +
         '</div>' +
+
         '<div id="homeFiltersDrawer" class="filters-drawer ' + (window.FC.homeFiltersOpen ? 'open' : '') + '">' +
         '<div class="flex items-center gap-2 mb-2 overflow-x-auto pb-1">' +
         '<span class="text-[10px] font-bold uppercase tracking-wider text-fc-outline mr-1">Смотреть:</span>' +
@@ -456,6 +467,7 @@ async function renderHome() {
         '<button class="chip ' + (window.FC.homeSort === 'old' ? 'active' : '') + '" onclick="setHomeSort(\'old\')">Старые</button>' +
         '</div>' +
         '</div>' +
+
         '</div>' +
         '<div id="homeResults"></div>' +
         '</div>';
@@ -640,15 +652,13 @@ async function renderFontDetail(fontId) {
     var authorAvatar = (author && author.avatar) || '';
     var likeCount = Object.keys(f.likes || {}).length;
     var liked = window.FC.user && f.likes && f.likes[window.FC.user.uid];
-    
-    // ВАЖНОЕ ИСПРАВЛЕНИЕ: Проверка на автора
     var isAuthor = window.FC.user && window.FC.user.uid === f.authorId;
 
     var html =
         '<div class="fade-in space-y-5">' +
         '<div class="flex justify-between items-center">' +
         '<button onclick="navigateTo(\'home\')" class="flex items-center gap-1 text-fc-outline hover:text-fc-primary text-sm">' + MATERIAL_ICON('arrow_back','text-sm') + ' Назад</button>' +
-        // Кнопки видны только автору
+        // Кнопки видны ТОЛЬКО автору
         (isAuthor ? 
             '<div class="flex gap-2">' +
             '<button onclick="openEditFontModal(\'' + fontId + '\')" class="px-3 py-1.5 rounded-full bg-fc-surface2 hover:bg-fc-surface3 text-slate-200 text-xs font-semibold border border-fc-surface3 flex items-center gap-1">' + MATERIAL_ICON('edit','text-sm') + ' Изменить</button>' +
@@ -660,6 +670,7 @@ async function renderFontDetail(fontId) {
         (f.cover ? '<img src="' + f.cover + '" class="w-full h-full object-cover" alt="">' : 
             '<div class="text-5xl font-bold text-fc-onPrimaryContainer opacity-60 text-center px-4 truncate w-full">' + escapeHtml(f.name) + '</div>') +
         '</div><div class="p-5"><h1 class="text-2xl font-bold text-slate-100">' + escapeHtml(f.name) + '</h1>' +
+        (f.meta && f.meta.description ? '<p class="text-sm text-fc-outline mt-1">' + escapeHtml(f.meta.description) + '</p>' : '') +
         '<div class="flex items-center gap-2 mt-2 cursor-pointer" onclick="navigateToProfileById(\'' + f.authorId + '\')">' +
         (authorAvatar ? '<img src="' + authorAvatar + '" class="w-8 h-8 rounded-full object-cover">' : '<div class="w-8 h-8 rounded-full bg-fc-primaryContainer flex items-center justify-center text-fc-onPrimaryContainer">' + MATERIAL_ICON('person','text-lg') + '</div>') +
         '<span class="text-sm font-semibold text-fc-primary">' + escapeHtml(authorName) + '</span></div>' +
@@ -695,28 +706,10 @@ async function renderFontDetail(fontId) {
     loadComments(fontId);
 }
 
-window.toggleLike = async function(fontId) {
-    if (!window.FC.user) { openAuthModal(); return; }
-    var uid = window.FC.user.uid;
-    var likeRef = ref(db, 'fonts/' + fontId + '/likes/' + uid);
-    var snap = await get(likeRef);
-    if (snap.exists()) await set(likeRef, null); else await set(likeRef, true);
-    renderFontDetail(fontId);
-};
-
-window.shareFont = function(fontId) {
-    var url = location.origin + '/font/' + fontId;
-    if (navigator.share) { navigator.share({ title: 'FontCut', url: url }).catch(function(){}); }
-    else {
-        try { navigator.clipboard.writeText(url).then(function(){ showToast('Ссылка скопирована'); }).catch(function(){ showToast('Ошибка копирования', 'error'); }); }
-        catch(e) { window.logDebug('Share err: ' + e.message); }
-    }
-};
-
-// ======= EDIT / DELETE =======
+// ======= EDIT/DELETE FONT =======
 window.deleteFont = async function(fontId) {
     if (!window.FC.user) { showToast('Войдите в аккаунт!', 'warning'); return; }
-    if (!confirm('Вы уверены, что хотите удалить этот шрифт?')) return;
+    if (!confirm('Вы уверены, что хотите удалить этот шрифт? Это действие нельзя отменить.')) return;
     try {
         await remove(ref(db, 'fonts/' + fontId));
         showToast('Шрифт удален');
@@ -726,12 +719,12 @@ window.deleteFont = async function(fontId) {
     }
 };
 
-// ВАЖНО: ИСПРАВЛЕНА ФОРМА РЕДАКТИРОВАНИЯ
 window.openEditFontModal = async function(fontId) {
     if (!window.FC.user) { showToast('Войдите в аккаунт!', 'warning'); return; }
     var snap = await get(ref(db, 'fonts/' + fontId));
     if (!snap.exists()) return;
     var f = snap.val();
+    
     var meta = f.meta || { version: '1.0', description: '', copyright: '', license: '', weight: '400', style: 'Regular', designer: '', manufacturer: '', url: '' };
     
     var modal = document.createElement('div'); modal.id = 'editFontModal';
@@ -739,8 +732,8 @@ window.openEditFontModal = async function(fontId) {
     modal.innerHTML = '<div class="modal-enter bg-fc-surface border border-fc-surface3 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">' +
         '<div class="flex justify-between items-center"><h3 class="text-lg font-bold">' + MATERIAL_ICON('edit','text-fc-primary mr-1') + ' Редактировать шрифт</h3><button onclick="document.getElementById(\'editFontModal\').remove()" class="text-fc-outline">' + MATERIAL_ICON('close') + '</button></div>' +
         '<div class="space-y-3">' +
-        '<div><label class="block text-xs text-fc-secondary mb-1">Название (обязательно)</label><input type="text" id="editFontName" value="' + escapeHtml(f.name) + '" class="w-full bg-slate-950 border border-fc-surface3 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-fc-primary"></div>' +
-        '<div><label class="block text-xs text-fc-secondary mb-1">Описание (необязательно)</label><textarea id="editFontDesc" rows="2" class="w-full bg-slate-950 border border-fc-surface3 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-fc-primary resize-none">' + escapeHtml(meta.description || '') + '</textarea></div>' +
+        '<div><label class="block text-xs text-fc-secondary mb-1">Название</label><input type="text" id="editFontName" value="' + escapeHtml(f.name) + '" class="w-full bg-slate-950 border border-fc-surface3 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-fc-primary"></div>' +
+        '<div><label class="block text-xs text-fc-secondary mb-1">Описание</label><textarea id="editFontDesc" rows="2" class="w-full bg-slate-950 border border-fc-surface3 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-fc-primary resize-none">' + escapeHtml(meta.description || '') + '</textarea></div>' +
         '<div class="grid grid-cols-2 gap-2">' +
         '<div><label class="block text-xs text-fc-secondary mb-1">Версия</label><input type="text" id="editFontVersion" value="' + escapeHtml(meta.version || '1.0') + '" class="w-full bg-slate-950 border border-fc-surface3 rounded-xl px-4 py-2 text-sm outline-none"></div>' +
         '<div><label class="block text-xs text-fc-secondary mb-1">Стиль</label><input type="text" id="editFontStyle" value="' + escapeHtml(meta.style || 'Regular') + '" class="w-full bg-slate-950 border border-fc-surface3 rounded-xl px-4 py-2 text-sm outline-none"></div>' +
@@ -756,9 +749,12 @@ window.openEditFontModal = async function(fontId) {
         
         '<div><label class="block text-xs text-fc-secondary mb-2">Видимость</label>' +
         '<div class="grid grid-cols-1 gap-2">' +
-        '<label class="vis-pill ' + (f.visibility === 'public' ? 'active' : '') + '" onclick="setVisibilityUI(this, \'public\')"><div class="indicator"></div><div>' + MATERIAL_ICON('public','text-sm align-middle mr-1') + ' Публичный (на главной)</div></label>' +
-        '<label class="vis-pill ' + (f.visibility === 'link' ? 'active' : '') + '" onclick="setVisibilityUI(this, \'link\')"><div class="indicator"></div><div>' + MATERIAL_ICON('link','text-sm align-middle mr-1') + ' По ссылке</div></label>' +
-        '<label class="vis-pill ' + (f.visibility === 'private' ? 'active' : '') + '" onclick="setVisibilityUI(this, \'private\')"><div class="indicator"></div><div>' + MATERIAL_ICON('lock','text-sm align-middle mr-1') + ' Приватный</div></label>' +
+        '<label class="vis-pill ' + (f.visibility === 'public' ? 'active' : '') + '" onclick="setVisibilityUI(this, \'public\')">' +
+        '<div class="indicator"></div><div>' + MATERIAL_ICON('public','text-sm align-middle mr-1') + ' Публичный (на главной)</div></label>' +
+        '<label class="vis-pill ' + (f.visibility === 'link' ? 'active' : '') + '" onclick="setVisibilityUI(this, \'link\')">' +
+        '<div class="indicator"></div><div>' + MATERIAL_ICON('link','text-sm align-middle mr-1') + ' По ссылке (только по ID)</div></label>' +
+        '<label class="vis-pill ' + (f.visibility === 'private' ? 'active' : '') + '" onclick="setVisibilityUI(this, \'private\')">' +
+        '<div class="indicator"></div><div>' + MATERIAL_ICON('lock','text-sm align-middle mr-1') + ' Приватный (только я)</div></label>' +
         '</div></div>' +
         
         '</div>' +
@@ -802,6 +798,24 @@ window.saveFontChanges = async function(fontId) {
         renderFontDetail(fontId);
     } catch(e) {
         showToast('Ошибка сохранения: ' + e.message, 'error');
+    }
+};
+
+window.toggleLike = async function(fontId) {
+    if (!window.FC.user) { openAuthModal(); return; }
+    var uid = window.FC.user.uid;
+    var likeRef = ref(db, 'fonts/' + fontId + '/likes/' + uid);
+    var snap = await get(likeRef);
+    if (snap.exists()) await set(likeRef, null); else await set(likeRef, true);
+    renderFontDetail(fontId);
+};
+
+window.shareFont = function(fontId) {
+    var url = location.origin + '/font/' + fontId;
+    if (navigator.share) { navigator.share({ title: 'FontCut', url: url }).catch(function(){}); }
+    else {
+        try { navigator.clipboard.writeText(url).then(function(){ showToast('Ссылка скопирована'); }).catch(function(){ showToast('Ошибка копирования', 'error'); }); }
+        catch(e) { window.logDebug('Share err: ' + e.message); }
     }
 };
 
@@ -957,7 +971,7 @@ async function renderProfileView(uid) {
             for (var k in data) {
                 if (data.hasOwnProperty(k)) {
                     var f = data[k];
-                    if (f.authorId === uid && (f.visibility === 'public' || (window.FC.user && window.FC.user.uid === uid))) {
+                    if (f.authorId === uid && (f.visibility === 'public' || f.visibility === 'link' || (window.FC.user && window.FC.user.uid === uid))) {
                         f.id = k; fonts.push(f);
                     }
                 }
@@ -1054,9 +1068,23 @@ async function renderProfileView(uid) {
         else {
             html += '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">';
             filtered.forEach(function(f){
-                html += '<div onclick="navigateTo(\'font\',\'' + f.id + '\')" class="bg-slate-950 rounded-2xl border border-fc-surface3 overflow-hidden cursor-pointer hover:border-fc-primary transition"><div class="w-full h-24 bg-gradient-to-br from-fc-primaryContainer to-fc-surface3 flex items-center justify-center relative">' +
+                // Кнопки управления видны только владельцу профиля
+                var controls = isOwn ? 
+                    '<div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition z-10">' +
+                    '<button onclick="event.stopPropagation();openEditFontModal(\'' + f.id + '\')" class="p-1.5 rounded-full bg-black/60 hover:bg-fc-primary text-slate-300 hover:text-white transition">' + MATERIAL_ICON('edit','text-sm') + '</button>' +
+                    '<button onclick="event.stopPropagation();deleteFont(\'' + f.id + '\')" class="p-1.5 rounded-full bg-black/60 hover:bg-fc-error text-slate-300 hover:text-white transition">' + MATERIAL_ICON('delete','text-sm') + '</button>' +
+                    '</div>' : '';
+
+                html += '<div class="bg-slate-950 rounded-2xl border border-fc-surface3 overflow-hidden group relative">' +
+                    '<div class="w-full h-24 bg-gradient-to-br from-fc-primaryContainer to-fc-surface3 flex items-center justify-center relative">' +
                     (f.cover ? '<img src="' + f.cover + '" class="w-full h-full object-cover">' : '<span class="text-xl font-bold text-fc-onPrimaryContainer opacity-60 px-2 truncate w-full text-center">' + escapeHtml(f.name) + '</span>') +
-                    '</div><div class="p-3"><h4 class="font-bold text-sm text-slate-100 truncate">' + escapeHtml(f.name) + '</h4><p class="text-xs text-fc-outline mt-1">' + MATERIAL_ICON('favorite','text-xs') + ' ' + Object.keys(f.likes||{}).length + ' · ' + formatBytes(f.fontBuffer) + '</p></div></div>';
+                    '</div>' +
+                    '<div class="p-3 cursor-pointer" onclick="navigateTo(\'font\',\'' + f.id + '\')">' +
+                    '<h4 class="font-bold text-sm text-slate-100 truncate">' + escapeHtml(f.name) + '</h4>' +
+                    '<p class="text-xs text-fc-outline mt-1">' + MATERIAL_ICON('favorite','text-xs') + ' ' + Object.keys(f.likes||{}).length + ' · ' + formatBytes(f.fontBuffer) + '</p>' +
+                    '</div>' +
+                    controls +
+                    '</div>';
             });
             html += '</div>';
         }
@@ -1194,11 +1222,11 @@ function renderCreate() {
     if (!window.FC.user) html += '<div class="bg-fc-surface rounded-3xl border border-fc-surface3 p-6 text-center">' + MATERIAL_ICON('lock','text-4xl text-fc-outline mb-2') + '<p class="text-sm text-fc-outline mb-3">Войдите, чтобы сохранять и публиковать</p><button onclick="openAuthModal()" class="px-6 py-2.5 rounded-full bg-fc-primary text-fc-onPrimary font-bold text-sm">' + MATERIAL_ICON('login','text-sm mr-1') + ' Войти</button></div>';
     html +=
         '<div class="bg-fc-surface rounded-3xl border border-fc-surface3 p-5 space-y-3">' +
-        '<div><label class="block text-xs font-semibold text-fc-secondary mb-1">Название шрифта <span class="text-fc-error">*</span></label><input type="text" id="fontNameInput" placeholder="Мой шрифт" value="' + escapeHtml(window.FC._editFontName || '') + '" class="w-full bg-slate-950 border border-fc-surface3 focus:border-fc-primary rounded-xl px-4 py-2.5 text-sm outline-none"></div>' +
+        '<div><label class="block text-xs font-semibold text-fc-secondary mb-1">Название шрифта *</label><input type="text" id="fontNameInput" placeholder="Мой шрифт" value="' + escapeHtml(window.FC._editFontName || '') + '" class="w-full bg-slate-950 border border-fc-surface3 focus:border-fc-primary rounded-xl px-4 py-2.5 text-sm outline-none"></div>' +
         '<div><label class="block text-xs font-semibold text-fc-secondary mb-1">Обложка</label><div class="flex items-center gap-3"><div id="coverPreview" class="w-20 h-20 bg-slate-950 rounded-xl border border-fc-surface3 overflow-hidden flex items-center justify-center">' +
         (window.FC.coverDataUrl ? '<img src="' + window.FC.coverDataUrl + '" class="w-full h-full object-cover">' : MATERIAL_ICON('image','text-2xl text-fc-outline')) +
         '</div><label class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-fc-surface2 hover:bg-fc-surface3 border border-fc-surface3 cursor-pointer transition text-xs font-medium">' + MATERIAL_ICON('upload','text-sm') + ' Загрузить<input type="file" accept="image/*" class="hidden" onchange="uploadCover(event)"></label>' +
-        (window.FC.coverDataUrl ? '<button onclick="window.FC.coverDataUrl=null;renderCreate()" class="px-3 py-2 rounded-xl bg-fc-error/10 text-fc-error border border-fc-error/30">' + MATERIAL_ICON('delete','text-sm') + '</button>' : '') +
+        (window.FC.coverDataUrl ? '<button onclick="window.FC.coverDataUrl=null;updateCoverPreview()" class="px-3 py-2 rounded-xl bg-fc-error/10 text-fc-error border border-fc-error/30">' + MATERIAL_ICON('delete','text-sm') + '</button>' : '') +
         '</div></div></div>' +
         '<div class="bg-fc-surface rounded-3xl border border-fc-surface3 p-5 space-y-3">' +
         '<div class="flex items-center justify-between"><h3 class="font-bold text-slate-100 flex items-center gap-2">' + MATERIAL_ICON('draw','text-fc-primary') + ' Холст</h3><span class="text-xs px-2 py-1 rounded-full bg-fc-surface2 text-fc-secondary font-mono">512×512</span></div>' +
@@ -1255,21 +1283,25 @@ function saveHistory() { if (!window.FC.ctx) return; if (window.FC.historyStack.
 window.undoCanvas = function() { if (window.FC.historyStack.length > 1) { window.FC.historyStack.pop(); window.FC.ctx.putImageData(window.FC.historyStack[window.FC.historyStack.length-1], 0, 0); } };
 window.clearCanvas = function() { if (!window.FC.ctx) return; window.FC.ctx.fillStyle = '#020617'; window.FC.ctx.fillRect(0, 0, 512, 512); saveHistory(); };
 
-// ИСПРАВЛЕН БАГ СБРОСА ПОЛЕЙ ПРИ ЗАГРУЗКЕ ОБЛОЖКИ
+window.updateCoverPreview = function() {
+    var container = document.getElementById('coverPreview');
+    if (!container) return;
+    if (window.FC.coverDataUrl) {
+        container.innerHTML = '<img src="' + window.FC.coverDataUrl + '" class="w-full h-full object-cover">';
+    } else {
+        container.innerHTML = MATERIAL_ICON('image','text-2xl text-fc-outline');
+    }
+};
+
 window.uploadCover = async function(event) {
     var file = event.target.files[0]; if (!file) return;
-    
-    // Сохраняем текущее имя перед загрузкой
-    var nameInput = document.getElementById('fontNameInput');
-    if (nameInput) window.FC._editFontName = nameInput.value;
-
     var fd = new FormData(); fd.append('image', file); showToast('Загружаем обложку...');
     try {
         var res = await fetch('https://api.imgbb.com/1/upload?key=' + IMGBB_API_KEY, { method: 'POST', body: fd });
         var data = await res.json();
         if (data.success) { 
             window.FC.coverDataUrl = data.data.url; 
-            renderCreate(); 
+            window.updateCoverPreview();
             showToast('Обложка загружена'); 
         }
     } catch(e) { showToast('Ошибка загрузки', 'error'); }
@@ -1327,7 +1359,7 @@ function renderGlyphsGrid() {
 }
 window.removeGlyph = function(idx) { window.FC.glyphsList.splice(idx, 1); renderGlyphsGrid(); };
 
-// ======== ЛОГИКА ТРАССИРОВКИ И СБОРКИ ========
+// ======== ОБНОВЛЕННАЯ ЛОГИКА ТРАССИРОВКИ И СБОРКИ ========
 function traceBitmapToPaths(imageData, targetSize) {
     targetSize = targetSize || 1000;
     var w = imageData.width, h = imageData.height, data = imageData.data;
@@ -1489,44 +1521,62 @@ async function buildFontBuffer(fontName, glyphs) {
     var font = new opentype.Font({ familyName: fontName, styleName: 'Regular', unitsPerEm: 1000, ascender: 800, descender: -200, glyphs: fontGlyphs });
     return font.toArrayBuffer();
 }
+// =====================================================================
 
-// ======= ОБНОВЛЕННАЯ ПУБЛИКАЦИЯ С МЕТАДАННЫМИ =======
+// ОБНОВЛЕННОЕ ОКНО ПУБЛИКАЦИИ (Сначала метаданные, потом видимость)
 window.showPublishModal = function() {
     if (!window.FC.user) { openAuthModal(); return; }
     var name = document.getElementById('fontNameInput') ? document.getElementById('fontNameInput').value.trim() : '';
-    if (!name) { showToast('Введите название шрифта', 'warning'); return; }
+    if (!name) { showToast('Введите название', 'warning'); return; }
     if (window.FC.glyphsList.length === 0) { showToast('Добавьте хотя бы 1 символ', 'warning'); return; }
     
-    // Собираем метаданные из полей, если они есть (для редактирования)
-    window.FC.fontMeta.name = name;
-
     var modal = document.createElement('div'); modal.id = 'publishModal';
     modal.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4';
     modal.innerHTML = '<div class="modal-enter bg-fc-surface border border-fc-surface3 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">' +
-        '<div class="flex justify-between items-center"><h3 class="text-lg font-bold">' + MATERIAL_ICON('publish','text-fc-primary mr-1') + ' Публикация</h3><button onclick="document.getElementById(\'publishModal\').remove()" class="text-fc-outline">' + MATERIAL_ICON('close') + '</button></div>' +
-        
+        '<div class="flex justify-between items-center"><h3 class="text-lg font-bold">' + MATERIAL_ICON('publish','text-fc-primary mr-1') + ' Публикация (Шаг 1 из 2)</h3><button onclick="document.getElementById(\'publishModal\').remove()" class="text-fc-outline">' + MATERIAL_ICON('close') + '</button></div>' +
+        '<p class="text-xs text-fc-outline">Заполните техническую информацию о шрифте. Поля со звёздочкой (*) обязательны.</p>' +
         '<div class="space-y-3">' +
-        '<div><label class="block text-xs text-fc-secondary mb-1">Название (обязательно)</label><input type="text" id="pubFontName" value="' + escapeHtml(name) + '" class="w-full bg-slate-950 border border-fc-surface3 rounded-xl px-4 py-2 text-sm outline-none focus:border-fc-primary"></div>' +
-        '<div><label class="block text-xs text-fc-secondary mb-1">Описание (необязательно)</label><textarea id="pubFontDesc" rows="2" class="w-full bg-slate-950 border border-fc-surface3 rounded-xl px-4 py-2 text-sm outline-none focus:border-fc-primary resize-none">' + escapeHtml(window.FC.fontMeta.description || '') + '</textarea></div>' +
+        '<div><label class="block text-xs text-fc-secondary mb-1">Описание шрифта</label><textarea id="pubDesc" rows="2" placeholder="Кратко о шрифте..." class="w-full bg-slate-950 border border-fc-surface3 rounded-xl px-4 py-2 text-sm outline-none focus:border-fc-primary resize-none">' + escapeHtml(window.FC.fontMeta.description || '') + '</textarea></div>' +
         '<div class="grid grid-cols-2 gap-2">' +
-        '<div><label class="block text-xs text-fc-secondary mb-1">Версия (желательно)</label><input type="text" id="pubFontVersion" value="' + escapeHtml(window.FC.fontMeta.version || '1.0') + '" class="w-full bg-slate-950 border border-fc-surface3 rounded-xl px-4 py-2 text-sm outline-none"></div>' +
-        '<div><label class="block text-xs text-fc-secondary mb-1">Стиль</label><input type="text" id="pubFontStyle" value="' + escapeHtml(window.FC.fontMeta.style || 'Regular') + '" class="w-full bg-slate-950 border border-fc-surface3 rounded-xl px-4 py-2 text-sm outline-none"></div>' +
+        '<div><label class="block text-xs text-fc-secondary mb-1">Версия *</label><input type="text" id="pubVersion" value="' + escapeHtml(window.FC.fontMeta.version || '1.0') + '" class="w-full bg-slate-950 border border-fc-surface3 rounded-xl px-4 py-2 text-sm outline-none focus:border-fc-primary"></div>' +
+        '<div><label class="block text-xs text-fc-secondary mb-1">Стиль *</label><input type="text" id="pubStyle" value="' + escapeHtml(window.FC.fontMeta.style || 'Regular') + '" class="w-full bg-slate-950 border border-fc-surface3 rounded-xl px-4 py-2 text-sm outline-none focus:border-fc-primary"></div>' +
         '</div>' +
         '<div class="grid grid-cols-2 gap-2">' +
-        '<div><label class="block text-xs text-fc-secondary mb-1">Вес (100-900)</label><input type="text" id="pubFontWeight" value="' + escapeHtml(window.FC.fontMeta.weight || '400') + '" class="w-full bg-slate-950 border border-fc-surface3 rounded-xl px-4 py-2 text-sm outline-none"></div>' +
-        '<div><label class="block text-xs text-fc-secondary mb-1">Лицензия (необязательно)</label><input type="text" id="pubFontLicense" value="' + escapeHtml(window.FC.fontMeta.license || '') + '" placeholder="OFL, MIT..." class="w-full bg-slate-950 border border-fc-surface3 rounded-xl px-4 py-2 text-sm outline-none"></div>' +
+        '<div><label class="block text-xs text-fc-secondary mb-1">Вес (100-900)</label><input type="text" id="pubWeight" value="' + escapeHtml(window.FC.fontMeta.weight || '400') + '" class="w-full bg-slate-950 border border-fc-surface3 rounded-xl px-4 py-2 text-sm outline-none focus:border-fc-primary"></div>' +
+        '<div><label class="block text-xs text-fc-secondary mb-1">Дизайнер</label><input type="text" id="pubDesigner" value="' + escapeHtml(window.FC.fontMeta.designer || '') + '" class="w-full bg-slate-950 border border-fc-surface3 rounded-xl px-4 py-2 text-sm outline-none focus:border-fc-primary"></div>' +
         '</div>' +
-        '<div><label class="block text-xs text-fc-secondary mb-1">Авторские права (необязательно)</label><input type="text" id="pubFontCopyright" value="' + escapeHtml(window.FC.fontMeta.copyright || '') + '" class="w-full bg-slate-950 border border-fc-surface3 rounded-xl px-4 py-2 text-sm outline-none"></div>' +
+        '<div><label class="block text-xs text-fc-secondary mb-1">Лицензия (необязательно)</label><input type="text" id="pubLicense" placeholder="OFL, MIT..." value="' + escapeHtml(window.FC.fontMeta.license || '') + '" class="w-full bg-slate-950 border border-fc-surface3 rounded-xl px-4 py-2 text-sm outline-none focus:border-fc-primary"></div>' +
+        '<div><label class="block text-xs text-fc-secondary mb-1">Авторские права (©) (необязательно)</label><input type="text" id="pubCopyright" placeholder="© 2026 Ваше Имя" value="' + escapeHtml(window.FC.fontMeta.copyright || '') + '" class="w-full bg-slate-950 border border-fc-surface3 rounded-xl px-4 py-2 text-sm outline-none focus:border-fc-primary"></div>' +
+        '<div><label class="block text-xs text-fc-secondary mb-1">Ссылка (URL) (необязательно)</label><input type="text" id="pubUrl" placeholder="https://..." value="' + escapeHtml(window.FC.fontMeta.url || '') + '" class="w-full bg-slate-950 border border-fc-surface3 rounded-xl px-4 py-2 text-sm outline-none focus:border-fc-primary"></div>' +
         '</div>' +
+        '<button onclick="goToVisibilityStep()" class="w-full py-3 rounded-full bg-fc-primary text-fc-onPrimary font-bold">Далее (Выбор видимости)</button>' +
+        '</div>';
+    document.body.appendChild(modal);
+};
 
-        '<div class="border-t border-fc-surface3 pt-3">' +
-        '<p class="text-xs text-fc-secondary mb-2">Куда опубликовать?</p>' +
+window.goToVisibilityStep = function() {
+    // Сохраняем введённые данные
+    window.FC.fontMeta.description = document.getElementById('pubDesc').value.trim();
+    window.FC.fontMeta.version = document.getElementById('pubVersion').value.trim();
+    window.FC.fontMeta.style = document.getElementById('pubStyle').value.trim();
+    window.FC.fontMeta.weight = document.getElementById('pubWeight').value.trim();
+    window.FC.fontMeta.designer = document.getElementById('pubDesigner').value.trim();
+    window.FC.fontMeta.license = document.getElementById('pubLicense').value.trim();
+    window.FC.fontMeta.copyright = document.getElementById('pubCopyright').value.trim();
+    window.FC.fontMeta.url = document.getElementById('pubUrl').value.trim();
+    
+    document.getElementById('publishModal').remove();
+    
+    var modal = document.createElement('div'); modal.id = 'publishModal';
+    modal.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4';
+    modal.innerHTML = '<div class="modal-enter bg-fc-surface border border-fc-surface3 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">' +
+        '<div class="flex justify-between items-center"><h3 class="text-lg font-bold">' + MATERIAL_ICON('publish','text-fc-primary mr-1') + ' Публикация (Шаг 2 из 2)</h3><button onclick="document.getElementById(\'publishModal\').remove()" class="text-fc-outline">' + MATERIAL_ICON('close') + '</button></div>' +
+        '<p class="text-xs text-fc-outline">Выберите, кто сможет видеть ваш шрифт.</p>' +
         '<div class="space-y-2">' +
-        '<button onclick="publishFont(\'public\')" class="w-full p-3 rounded-xl bg-fc-surface2 hover:bg-fc-surface3 border border-fc-surface3 text-left flex items-center gap-2"><div class="flex items-center gap-2">' + MATERIAL_ICON('public','text-fc-primary') + ' <b>Публичный</b></div><p class="text-xs text-fc-outline ml-7">На главной</p></button>' +
-        '<button onclick="publishFont(\'link\')" class="w-full p-3 rounded-xl bg-fc-surface2 hover:bg-fc-surface3 border border-fc-surface3 text-left flex items-center gap-2"><div class="flex items-center gap-2">' + MATERIAL_ICON('link','text-fc-primary') + ' <b>По ссылке</b></div><p class="text-xs text-fc-outline ml-7">Только по прямой ссылке</p></button>' +
-        '<button onclick="publishFont(\'private\')" class="w-full p-3 rounded-xl bg-fc-surface2 hover:bg-fc-surface3 border border-fc-surface3 text-left flex items-center gap-2"><div class="flex items-center gap-2">' + MATERIAL_ICON('lock','text-fc-primary') + ' <b>Приватный</b></div><p class="text-xs text-fc-outline ml-7">Виден только вам</p></button>' +
-        '<button onclick="saveDraft()" class="w-full p-3 rounded-xl bg-fc-surface2 hover:bg-fc-surface3 border border-fc-surface3 text-left flex items-center gap-2"><div class="flex items-center gap-2">' + MATERIAL_ICON('save','text-fc-primary') + ' <b>Черновик</b></div><p class="text-xs text-fc-outline ml-7">Локально</p></button>' +
-        '</div></div>' +
+        '<button onclick="publishFont(\'public\')" class="w-full p-4 rounded-2xl bg-fc-surface2 hover:bg-fc-surface3 border border-fc-surface3 text-left"><div class="flex items-center gap-2 mb-1">' + MATERIAL_ICON('public','text-fc-primary') + '<b>Публичный</b></div><p class="text-xs text-fc-outline ml-7">Виден всем на главной странице</p></button>' +
+        '<button onclick="publishFont(\'link\')" class="w-full p-4 rounded-2xl bg-fc-surface2 hover:bg-fc-surface3 border border-fc-surface3 text-left"><div class="flex items-center gap-2 mb-1">' + MATERIAL_ICON('link','text-fc-primary') + '<b>По ссылке</b></div><p class="text-xs text-fc-outline ml-7">Доступен только по прямой ссылке</p></button>' +
+        '<button onclick="publishFont(\'private\')" class="w-full p-4 rounded-2xl bg-fc-surface2 hover:bg-fc-surface3 border border-fc-surface3 text-left"><div class="flex items-center gap-2 mb-1">' + MATERIAL_ICON('lock','text-fc-primary') + '<b>Приватный</b></div><p class="text-xs text-fc-outline ml-7">Виден только вам в профиле</p></button>' +
+        '</div>' +
         '</div>';
     document.body.appendChild(modal);
 };
@@ -1534,22 +1584,7 @@ window.showPublishModal = function() {
 window.publishFont = async function(visibility) {
     document.getElementById('publishModal') && document.getElementById('publishModal').remove();
     if (!window.FC.user) { openAuthModal(); return; }
-    
-    var fontName = document.getElementById('pubFontName').value.trim(); 
-    if (!fontName) { showToast('Название не указано', 'warning'); return; }
-    
-    var fontMeta = {
-        version: document.getElementById('pubFontVersion').value.trim(),
-        description: document.getElementById('pubFontDesc').value.trim(),
-        style: document.getElementById('pubFontStyle').value.trim(),
-        weight: document.getElementById('pubFontWeight').value.trim(),
-        license: document.getElementById('pubFontLicense').value.trim(),
-        copyright: document.getElementById('pubFontCopyright').value.trim(),
-        designer: window.FC.fontMeta.designer || '',
-        manufacturer: window.FC.fontMeta.manufacturer || '',
-        url: window.FC.fontMeta.url || ''
-    };
-
+    var fontName = document.getElementById('fontNameInput').value.trim(); if (!fontName) { showToast('Название не указано', 'warning'); return; }
     showToast('Собираем шрифт...');
     try {
         var buffer = await buildFontBuffer(fontName, window.FC.glyphsList);
@@ -1560,8 +1595,13 @@ window.publishFont = async function(visibility) {
         var payload = {
             name: fontName, authorId: window.FC.user.uid,
             glyphs: window.FC.glyphsList.map(function(g){ return { char: g.char, codePoint: g.codePoint, hex: g.hex, byteCount: g.byteCount, rawHex: g.rawHex, dataUrl: g.dataUrl }; }),
-            glyphCount: window.FC.glyphsList.length, weight: 20 + Math.floor(Math.random() * 40),
-            cover: window.FC.coverDataUrl || '', visibility: visibility, fontBuffer: fontBase64, likes: {}, meta: fontMeta, createdAt: Date.now()
+            glyphCount: window.FC.glyphsList.length, 
+            cover: window.FC.coverDataUrl || '', 
+            visibility: visibility, 
+            fontBuffer: fontBase64, 
+            likes: {}, 
+            meta: window.FC.fontMeta,
+            createdAt: Date.now()
         };
         await set(ref(db, 'fonts/' + fontId), payload);
         showToast('Шрифт опубликован!');
@@ -1570,10 +1610,9 @@ window.publishFont = async function(visibility) {
         navigateTo('font', fontId);
     } catch(e) { console.error(e); showToast('Ошибка сборки: ' + e.message, 'error'); window.logDebug('Build Font Error: ' + e.message); }
 };
-
 window.saveDraft = function() {
-    var fontName = document.getElementById('pubFontName') ? document.getElementById('pubFontName').value.trim() : 'Без названия';
-    window.FC.fontMeta.description = document.getElementById('pubFontDesc') ? document.getElementById('pubFontDesc').value.trim() : '';
+    var fontName = document.getElementById('fontNameInput') ? document.getElementById('fontNameInput').value.trim() : 'Без названия';
+    window.FC.fontMeta.description = document.getElementById('pubDesc') ? document.getElementById('pubDesc').value.trim() : '';
     var draft = { id: window.FC.editingFontId || uid(), name: fontName || 'Без названия', glyphs: window.FC.glyphsList, cover: window.FC.coverDataUrl, meta: window.FC.fontMeta, updatedAt: Date.now() };
     var drafts = JSON.parse(localStorage.getItem('fc_drafts') || '[]');
     var idx = -1; for (var i = 0; i < drafts.length; i++) if (drafts[i].id === draft.id) { idx = i; break; }
