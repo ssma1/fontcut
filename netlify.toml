@@ -1,8 +1,6 @@
 [build]
   processing.html.pretty_urls = true
 
-# Применяем Edge Function ко всем ссылкам
 [[edge_functions]]
   path = "/*"
   function = "og-preview"
-
