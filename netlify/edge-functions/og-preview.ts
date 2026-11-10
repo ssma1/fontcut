@@ -5,12 +5,12 @@ export default async (request, context) => {
   const url = new URL(request.url);
   const userAgent = request.headers.get("user-agent") || "";
 
-  // Пропускаем статические файлы
-  if (url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|json|woff|woff2|ttf)$/i)) {
+  // Пропускаем статические файлы и запросы без User-Agent
+  if (url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|json|woff|woff2|ttf|xml|txt)$/i)) {
     return context.next();
   }
 
-  // Получаем ID шрифта из пути (например, /font/fc_12345)
+  // Ищем ID шрифта в пути (например, /font/fc_12345)
   const pathParts = url.pathname.split("/").filter(Boolean);
   let fontId = null;
   if (pathParts[0] === "font" && pathParts[1]) {
@@ -23,24 +23,31 @@ export default async (request, context) => {
 
   // Если это не бот или нет ID — отдаем стандартную страницу
   if (!fontId || !isBot) {
+    console.log(`[OG] Skipping: isBot=${isBot}, fontId=${fontId}`);
     return context.next();
   }
 
   try {
+    console.log(`[OG] Fetching font: ${fontId}`);
     // Запрашиваем шрифт из Realtime Database
     const res = await fetch(`${FIREBASE_DB_URL}/fonts/${fontId}.json`);
-    if (!res.ok) return context.next();
+    
+    if (!res.ok) {
+      console.error(`[OG] Firebase returned ${res.status}`);
+      return context.next();
+    }
     
     const font = await res.json();
+    console.log(`[OG] Font data:`, font ? font.name : "null");
     
     // Если шрифт не найден или он не публичный — отдаем заглушку
     if (!font || font.visibility !== "public") {
+      console.warn(`[OG] Font not found or not public`);
       return context.next();
     }
 
     const title = font.name || "FontCut Шрифт";
     const description = font.meta?.description || "Иконочный шрифт, созданный в FontCut";
-    // Если обложки нет, используем стандартный баннер
     const imageUrl = font.cover || `${url.origin}/fontcut-banner.png`;
 
     // Формируем HTML с мета-тегами
@@ -73,6 +80,7 @@ export default async (request, context) => {
 </body>
 </html>`;
 
+    console.log(`[OG] Returning custom HTML for: ${title}`);
     return new Response(html, {
       headers: {
         "Content-Type": "text/html; charset=utf-8",
@@ -81,7 +89,7 @@ export default async (request, context) => {
     });
 
   } catch (err) {
-    console.error("OG Generator Error:", err);
+    console.error("[OG] Generator Error:", err);
     return context.next();
   }
 };
@@ -94,8 +102,3 @@ function escapeXml(unsafe) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 }
-
-export const config = {
-  path: ["/*"],
-};
-
