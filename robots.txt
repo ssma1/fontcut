@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /create
+Disallow: /drafts
+Disallow: /profile
+
+Sitemap: https://fontcut.wcat.com/sitemap.xml
