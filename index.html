@@ -18,11 +18,6 @@
 <meta property="og:image:height" content="630">
 <meta property="og:url" content="https://fontcuts.web.app"> <!-- Замените на ваш реальный домен -->
 
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="FontCut — Создавай иконочные шрифты">
-<meta name="twitter:description" content="Платформа для создания, тестирования и публикации собственных иконочных шрифтов.">
-<meta name="twitter:image" content="fontcut-banner.png">
-
 <!-- ==== СТИЛИ И СКРИПТЫ ==== -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
@@ -67,9 +62,15 @@ tailwind.config = {
     *::selection { background: transparent; }
     .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0); }
     .comment-nested { margin-left: 16px; border-left: 2px solid #2c2f38; padding-left: 10px; }
+    
+    /* Стили для кастомных чипсов */
     .chip { display:inline-flex; align-items:center; gap:4px; padding:6px 12px; border-radius:999px; font-size:12px; font-weight:600; border:1px solid #2c2f38; background:#181a1f; color:#938f99; cursor:pointer; transition: all 0.15s; }
     .chip.active { background:#4f378b; color:#eaddff; border-color:#4f378b; }
     .chip:hover:not(.active) { background:#22252c; }
+
+    /* Анимация выпадающих фильтров */
+    .filters-drawer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out, margin-top 0.3s ease-in-out; opacity: 0; margin-top: 0; }
+    .filters-drawer.open { max-height: 200px; opacity: 1; margin-top: 12px; }
 </style>
 </head>
 <body class="min-h-screen flex flex-col bg-fc-bg text-slate-100 antialiased">
@@ -171,7 +172,8 @@ window.FC = {
     canvas: null, ctx: null, isDrawing: false, currentTool: 'pencil', historyStack: [],
     glyphsList: [], coverDataUrl: null, authMode: 'login', preloadedFonts: {},
     _pendingAvatarUrl: null, _editFontName: '', _currentFontId: null,
-    homeSort: 'new', homeTab: 'fonts', homeQuery: '',
+    // ИЗМЕНЕНИЯ: На главной по умолчанию "Популярные", в профиле "Новые", фильтры скрыты
+    homeSort: 'pop', homeTab: 'fonts', homeQuery: '', homeFiltersOpen: false,
     profileSort: 'new', profileQuery: '', profileTab: 'fonts'
 };
 
@@ -356,7 +358,6 @@ function renderHeader() {
 
 // ========= НОВАЯ ЛОГИКА НАВИГАЦИИ (БЕЗ ?view=) =========
 window.navigateTo = function(view, param, authorId) {
-    // Формируем красивый URL
     let url = '/';
     if (view === 'home') url = '/';
     else if (view === 'create') url = '/create';
@@ -373,12 +374,10 @@ window.navigateToProfileById = function(uid) {
 };
 
 function route() {
-    // 1. Получаем путь из адресной строки (например, "/font/123")
-    var path = location.pathname.split('/').filter(Boolean); // ["font", "123"]
+    var path = location.pathname.split('/').filter(Boolean);
     var view = path[0] || 'home';
     var param = path[1] || null;
 
-    // 2. Обратная совместимость (если вдруг старая ссылка ?view=...)
     var searchParams = new URLSearchParams(location.search);
     if (searchParams.get('view')) {
         view = searchParams.get('view');
@@ -400,7 +399,6 @@ function updateBottomNav(view) {
     ['home','create','profile'].forEach(function(v) {
         var btn = document.getElementById('nav' + v.charAt(0).toUpperCase() + v.slice(1));
         if (!btn) return;
-        // Подсвечиваем вкладку
         if (v === view || (view === 'font' && v === 'home') || (view === 'drafts' && v === 'create')) {
             btn.classList.remove('text-fc-outline'); btn.classList.add('text-fc-primary');
             btn.querySelector('span:last-child').classList.add('font-bold');
@@ -410,9 +408,8 @@ function updateBottomNav(view) {
         }
     });
 }
-// ========================================================
 
-// ======= HOME =======
+// ======= HOME (С ВЫПАДАЮЩИМИ ФИЛЬТРАМИ) =======
 async function renderHome() {
     var container = document.getElementById('viewContainer');
     container.innerHTML = '<div class="flex justify-center py-20">' + MATERIAL_ICON('progress_activity','text-4xl text-fc-primary animate-spin') + '</div>';
@@ -435,10 +432,20 @@ async function renderHome() {
     var html =
         '<div class="fade-in space-y-4">' +
         '<div class="bg-fc-surface rounded-3xl border border-fc-surface3 p-3">' +
-        '<div class="relative mb-3">' +
+        
+        // Строка поиска + кнопка фильтров
+        '<div class="flex items-center gap-2">' +
+        '<div class="relative flex-1">' +
         '<input type="text" id="homeSearchInput" value="' + escapeHtml(window.FC.homeQuery) + '" placeholder="Поиск по названию и автору..." class="w-full bg-slate-950 border border-fc-surface3 focus:border-fc-primary text-slate-100 rounded-2xl pl-11 pr-4 py-2.5 text-sm outline-none">' +
         '<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-fc-outline text-lg">search</span>' +
         '</div>' +
+        '<button onclick="toggleHomeFilters()" class="p-2.5 rounded-2xl border transition ' + (window.FC.homeFiltersOpen ? 'bg-fc-primaryContainer border-fc-primary text-fc-onPrimaryContainer' : 'bg-fc-surface2 border-fc-surface3 text-fc-outline hover:text-slate-200') + '">' +
+        MATERIAL_ICON('tune') +
+        '</button>' +
+        '</div>' +
+
+        // Выпадающие фильтры
+        '<div id="homeFiltersDrawer" class="filters-drawer ' + (window.FC.homeFiltersOpen ? 'open' : '') + '">' +
         '<div class="flex items-center gap-2 mb-2 overflow-x-auto pb-1">' +
         '<span class="text-[10px] font-bold uppercase tracking-wider text-fc-outline mr-1">Смотреть:</span>' +
         '<button class="chip ' + (window.FC.homeTab === 'fonts' ? 'active' : '') + '" onclick="setHomeTab(\'fonts\')">' + MATERIAL_ICON('font_download','text-xs') + ' Шрифты</button>' +
@@ -446,11 +453,13 @@ async function renderHome() {
         '</div>' +
         '<div class="flex items-center gap-2 overflow-x-auto pb-1">' +
         '<span class="text-[10px] font-bold uppercase tracking-wider text-fc-outline mr-1">Сортировка:</span>' +
-        '<button class="chip ' + (window.FC.homeSort === 'new' ? 'active' : '') + '" onclick="setHomeSort(\'new\')">Новые</button>' +
-        '<button class="chip ' + (window.FC.homeSort === 'old' ? 'active' : '') + '" onclick="setHomeSort(\'old\')">Старые</button>' +
         '<button class="chip ' + (window.FC.homeSort === 'pop' ? 'active' : '') + '" onclick="setHomeSort(\'pop\')">Популярные</button>' +
         '<button class="chip ' + (window.FC.homeSort === 'nop' ? 'active' : '') + '" onclick="setHomeSort(\'nop\')">Непопулярные</button>' +
+        '<button class="chip ' + (window.FC.homeSort === 'new' ? 'active' : '') + '" onclick="setHomeSort(\'new\')">Новые</button>' +
+        '<button class="chip ' + (window.FC.homeSort === 'old' ? 'active' : '') + '" onclick="setHomeSort(\'old\')">Старые</button>' +
         '</div>' +
+        '</div>' +
+
         '</div>' +
         '<div id="homeResults"></div>' +
         '</div>';
@@ -464,6 +473,19 @@ async function renderHome() {
 
     renderHomeResults(allFonts, allUsers);
 }
+
+window.toggleHomeFilters = function() {
+    window.FC.homeFiltersOpen = !window.FC.homeFiltersOpen;
+    var drawer = document.getElementById('homeFiltersDrawer');
+    var btn = drawer.previousElementSibling.querySelector('button');
+    if (window.FC.homeFiltersOpen) {
+        drawer.classList.add('open');
+        btn.className = 'p-2.5 rounded-2xl border transition bg-fc-primaryContainer border-fc-primary text-fc-onPrimaryContainer';
+    } else {
+        drawer.classList.remove('open');
+        btn.className = 'p-2.5 rounded-2xl border transition bg-fc-surface2 border-fc-surface3 text-fc-outline hover:text-slate-200';
+    }
+};
 
 function renderHomeResults(allFonts, allUsers) {
     var results = document.getElementById('homeResults');
@@ -817,7 +839,7 @@ function generateSVGFontString(font) {
     return '<?xml version="1.0" standalone="no"?>\n<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n<svg xmlns="http://www.w3.org/2000/svg">\n<defs>\n<font id="' + escapeHtml(font.name) + '" horiz-adv-x="1000">\n<font-face units-per-em="1000" ascent="800" descent="-200"/>\n<missing-glyph horiz-adv-x="800"/>\n' + glyphsSvg + '\n</font>\n</defs>\n</svg>';
 }
 
-// ======= PROFILE =======
+// ======= PROFILE (С ВЫПАДАЮЩИМИ ФИЛЬТРАМИ) =======
 async function renderProfileView(uid) {
     var container = document.getElementById('viewContainer');
     container.innerHTML = '<div class="flex justify-center py-20">' + MATERIAL_ICON('progress_activity','text-4xl text-fc-primary animate-spin') + '</div>';
@@ -901,15 +923,19 @@ async function renderProfileView(uid) {
     html += '</div>';
 
     if (window.FC.profileTab !== 'drafts') {
-        html += '<div class="bg-fc-surface rounded-3xl border border-fc-surface3 p-3 space-y-2">' +
-            '<div class="relative"><input type="text" id="profileSearchInput" value="' + escapeHtml(window.FC.profileQuery) + '" placeholder="Поиск моих шрифтов..." class="w-full bg-slate-950 border border-fc-surface3 focus:border-fc-primary text-slate-100 rounded-xl pl-10 pr-4 py-2 text-sm outline-none"><span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-fc-outline text-lg">search</span></div>' +
+        html += '<div class="bg-fc-surface rounded-3xl border border-fc-surface3 p-3">' +
+            '<div class="flex items-center gap-2 mb-1">' +
+            '<div class="relative flex-1"><input type="text" id="profileSearchInput" value="' + escapeHtml(window.FC.profileQuery) + '" placeholder="Поиск моих шрифтов..." class="w-full bg-slate-950 border border-fc-surface3 focus:border-fc-primary text-slate-100 rounded-xl pl-10 pr-4 py-2 text-sm outline-none"><span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-fc-outline text-lg">search</span></div>' +
+            '<button onclick="toggleProfileFilters()" class="p-2 rounded-xl border transition ' + (window.FC.profileFiltersOpen ? 'bg-fc-primaryContainer border-fc-primary text-fc-onPrimaryContainer' : 'bg-fc-surface2 border-fc-surface3 text-fc-outline hover:text-slate-200') + '">' + MATERIAL_ICON('tune') + '</button>' +
+            '</div>' +
+            '<div id="profileFiltersDrawer" class="filters-drawer ' + (window.FC.profileFiltersOpen ? 'open' : '') + '">' +
             '<div class="flex items-center gap-2 overflow-x-auto pb-1">' +
             '<span class="text-[10px] font-bold uppercase tracking-wider text-fc-outline mr-1">Сортировка:</span>' +
             '<button class="chip ' + (window.FC.profileSort === 'new' ? 'active' : '') + '" onclick="setProfileSort(\'new\')">Новые</button>' +
             '<button class="chip ' + (window.FC.profileSort === 'old' ? 'active' : '') + '" onclick="setProfileSort(\'old\')">Старые</button>' +
             '<button class="chip ' + (window.FC.profileSort === 'pop' ? 'active' : '') + '" onclick="setProfileSort(\'pop\')">Популярные</button>' +
             '<button class="chip ' + (window.FC.profileSort === 'nop' ? 'active' : '') + '" onclick="setProfileSort(\'nop\')">Непопулярные</button>' +
-            '</div></div>';
+            '</div></div></div>';
     }
 
     html += '<div class="bg-fc-surface rounded-3xl border border-fc-surface3 p-5">';
@@ -942,6 +968,19 @@ async function renderProfileView(uid) {
     var ps = document.getElementById('profileSearchInput');
     if (ps) ps.addEventListener('input', function(e){ window.FC.profileQuery = e.target.value; renderProfileView(uid); });
 }
+
+window.toggleProfileFilters = function() {
+    window.FC.profileFiltersOpen = !window.FC.profileFiltersOpen;
+    var drawer = document.getElementById('profileFiltersDrawer');
+    var btn = drawer.previousElementSibling.querySelector('button');
+    if (window.FC.profileFiltersOpen) {
+        drawer.classList.add('open');
+        btn.className = 'p-2 rounded-xl border transition bg-fc-primaryContainer border-fc-primary text-fc-onPrimaryContainer';
+    } else {
+        drawer.classList.remove('open');
+        btn.className = 'p-2 rounded-xl border transition bg-fc-surface2 border-fc-surface3 text-fc-outline hover:text-slate-200';
+    }
+};
 
 window.setProfileTab = function(t) { 
     window.FC.profileTab = t; 
@@ -1412,10 +1451,6 @@ window.loadDraft = function(id) {
 };
 
 window.FC.historyStack = []; window.FC.glyphsList = []; window.FC.coverDataUrl = null;
-window.FC.homeTab = window.FC.homeTab || 'fonts';
-window.FC.homeSort = window.FC.homeSort || 'new';
-window.FC.profileTab = window.FC.profileTab || 'fonts';
-window.FC.profileSort = window.FC.profileSort || 'new';
 renderHeader(); route();
 </script>
 </body>
